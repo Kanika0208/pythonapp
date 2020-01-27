@@ -1,0 +1,80 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-mysql
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "fullname" . }}-mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}-mysql
+    spec:
+      containers:
+      - image: {{ .Values.sqlimage }}
+        name: {{ template "fullname" . }}-mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+           secretKeyRef:
+              name: secret
+              key: passwd
+        - name: MYSQL_USER
+          value: webuser
+        - name: MYSQL_DATABASE
+          value: webapp
+        - name: MYSQL_PASSWORD
+          valueFrom:
+           secretKeyRef:
+              name: secret
+              key: sqlpwd
+        
+        ports:
+        - containerPort: {{ .Values.sqlport }}
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: pvc
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-app
+  labels:
+    app: {{ template "fullname" . }}-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ template "fullname" . }}-app
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}-app
+    spec:
+      containers:
+        - name: {{ template "fullname" . }}-app
+          image: {{ .Values.pythonimage }}
+          ports:
+            - containerPort: {{ .Values.pythonport }}
+          env:
+            - name: DB_HOSTNAME
+              value: {{ template "fullname" . }}-mysql
+            - name: DB_USERNAME
+              value: webuser
+            - name: DB_PASSWORD
+              valueFrom:
+               secretKeyRef:
+                  name: secret
+                  key: sqlpwd
+            - name: DB_NAME
+              value: webapp

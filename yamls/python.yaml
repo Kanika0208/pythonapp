@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python
+  labels:
+    app: python
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python
+  template:
+    metadata:
+      labels:
+        app: python
+    spec:
+      containers:
+        - name: python
+          image: docker.io/kanika02/apprepo:v1
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DB_HOSTNAME
+              value: mysql
+            - name: DB_USERNAME
+              value: webuser
+            - name: DB_PASSWORD
+              valueFrom:
+               secretKeyRef:
+                  name: sql-secret
+                  key: sqlpwd
+            - name: DB_NAME
+              value: webapp
+             
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python
+  labels:
+    app: python
+spec:
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+  selector:
+    app: python
+  type: NodePort

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}-mysql
+spec:
+  ports:
+  - port: {{ .Values.sqlport }}
+  selector:
+    app: {{ template "fullname" . }}-mysql
+  type: ClusterIP
+  
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" . }}-app
+  labels:
+    app: {{ template "fullname" . }}-app
+spec:
+  ports:
+  - port: {{ .Values.pythonport }}
+    targetPort: {{ .Values.pythonport }}
+    protocol: TCP
+  selector:
+    app: {{ template "fullname" . }}-app
+  type: NodePort
